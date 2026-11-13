@@ -138,17 +138,33 @@ def describe(pk, settings, rules, log, today, start, write):
     if write:
         d = os.path.join(posts_folder, "%s_%s" % (pack["date"], pk["key"]))
         pj = os.path.join(d, "post_v1.json")
-        versions = sorted(f for f in (os.listdir(d) if os.path.isdir(d) else []) if re.fullmatch(r"post_v\d+\.json", f))
+        versions = sorted((f for f in (os.listdir(d) if os.path.isdir(d) else []) if re.fullmatch(r"post_v\d+\.json", f)),
+                          key=lambda f: int(re.search(r"\d+", f).group()))
+        current = None
         if versions:
-            out["post_file"] = os.path.join(d, versions[-1])
-            out["post_file_state"] = "already there, left as it is"
-        else:
+            with open(os.path.join(d, versions[-1]), encoding="utf-8") as f:
+                current = json.load(f)
+        untouched = versions == ["post_v1.json"] and (current.get("release") or {}).get("mode", "draft") == "draft"
+        if not versions or untouched:
+            # post_v1 is a copy of the plan and nothing has been agreed yet, so keep it current with the plan.
             os.makedirs(d, exist_ok=True)
             with open(pj, "w", encoding="utf-8") as f:
                 json.dump(pack, f, indent=2, ensure_ascii=False)
             check_post.write_review(pack, report, os.path.join(d, "post_v1.md"), settings)
             out["post_file"] = pj
-            out["post_file_state"] = "written"
+            out["post_file_state"] = "written" if not versions else ("up to date with the plan" if current == pack else "REFRESHED: the plan changed since the last run")
+        else:
+            latest = os.path.join(d, versions[-1])
+            out["post_file"] = latest
+            out["post_file_state"] = "kept: a person changed or agreed this version"
+
+            def words(p):
+                return [(x.get("account"), x.get("text"), x.get("title")) for x in p.get("posts", [])]
+
+            if words(current) != words(pack):
+                out["warns"].append("the plan's captions differ from %s. Either the person changed this post, or the plan changed after it. "
+                                    "Show the person the difference and ask which to use" % versions[-1])
+            check_post.write_review(current, check_post.check_pack(current, settings, rules, posts_folder), os.path.splitext(latest)[0] + ".md", settings)
         out["review_page"] = os.path.splitext(out["post_file"])[0] + ".md"
     return out
 
@@ -247,7 +263,7 @@ def main():
         upcoming = [(pk, o) for pk, o in zip(chosen, described) if pk["date"] >= start and o["state"] not in ("DONE",)]
         described = [describe(upcoming[0][0], settings, rules, log, today, start, write)] if upcoming else []
 
-    head = {"plan": note, "brand": settings.get("brand", ""), "today": common.day_name(today), "timezone": tz,
+    head = {"setup_complete": not common.missing(settings), "plan": note, "brand": settings.get("brand", ""), "today": common.day_name(today), "timezone": tz,
             "posting_time": settings["posting_time"], "handover_folder": settings.get("handover_folder") or "(not set)"}
     if args.json:
         print(json.dumps({**head, "posts": described, "missed": missed}, indent=2, ensure_ascii=False, default=str))
@@ -255,6 +271,9 @@ def main():
     print("Plan: %s" % note)
     print("%sToday is %s in %s. Posts go out at %s." % ((settings["brand"] + ". ") if settings.get("brand") else "", head["today"], tz, settings["posting_time"]))
     print("Handover folder: %s" % head["handover_folder"])
+    gaps = common.missing(settings)
+    if gaps:
+        print("SET-UP NOT COMPLETE (%d things missing, see setup.py show). You can look at the posts, but nothing can be scheduled yet." % len(gaps))
     print("")
     if args.cmd == "status":
         for o in described:

@@ -70,6 +70,28 @@ def expand(p):
     return os.path.normpath(os.path.expandvars(os.path.expanduser(p)))
 
 
+def missing(s):
+    """What still has to be done before anything can be scheduled from this computer."""
+    gaps = []
+    folder = expand(s.get("handover_folder"))
+    if not folder:
+        gaps.append("handover_folder is empty. Run: setup.py find-folder --save")
+    elif not os.path.isdir(folder):
+        gaps.append("handover_folder does not exist on this computer: %s" % folder)
+    else:
+        for m in s.get("handover_markers") or []:
+            if not os.path.isdir(os.path.join(folder, m)):
+                gaps.append("handover_folder has no '%s' inside: %s" % (m, folder))
+    for key, acc in s.get("accounts", {}).items():
+        if not acc.get("on"):
+            continue
+        if not acc.get("accountId"):
+            gaps.append("%s is switched on but has no Blotato accountId" % key)
+        if acc.get("needs_page") and not acc.get("pageId"):
+            gaps.append("%s needs a pageId (it posts to a page, not to a personal profile)" % key)
+    return gaps
+
+
 def truthy(v):
     return v is True or str(v).strip().lower() in ("true", "yes", "y", "1", "on")
 

@@ -73,7 +73,8 @@ def import_old(s, path):
             continue
         if o.get("accountId") and not acc.get("accountId"):
             acc["accountId"] = o["accountId"]
-            acc["on"] = bool(o.get("on"))
+            if "on" in o:
+                acc["on"] = bool(o["on"])
             n += 1
         if o.get("pageId") and not acc.get("pageId"):
             acc["pageId"] = o["pageId"]
@@ -116,27 +117,6 @@ def cmd_refresh(args):
         print("Accounts added from the plan: %s" % ", ".join(added))
 
 
-def missing(s):
-    gaps = []
-    folder = common.expand(s.get("handover_folder"))
-    if not folder:
-        gaps.append("handover_folder is empty. Run: setup.py find-folder --save")
-    elif not os.path.isdir(folder):
-        gaps.append("handover_folder does not exist on this computer: %s" % folder)
-    else:
-        for m in s.get("handover_markers") or []:
-            if not os.path.isdir(os.path.join(folder, m)):
-                gaps.append("handover_folder has no '%s' inside: %s" % (m, folder))
-    for key, acc in s.get("accounts", {}).items():
-        if not acc.get("on"):
-            continue
-        if not acc.get("accountId"):
-            gaps.append("%s is switched on but has no Blotato accountId" % key)
-        if acc.get("needs_page") and not acc.get("pageId"):
-            gaps.append("%s needs a pageId (it posts to a page, not to a personal profile)" % key)
-    return gaps
-
-
 def cmd_show(args):
     s = common.load_settings()
     print("Settings file: %s" % common.SETTINGS_PATH)
@@ -153,7 +133,7 @@ def cmd_show(args):
         if acc.get("needs_page"):
             ids += ", page saved" if acc.get("pageId") else ", no page"
         print("  [%s] %-20s %-10s %-20s %s" % (state, key, acc.get("platform", ""), ids, acc.get("label", "")))
-    gaps = missing(s)
+    gaps = common.missing(s)
     print("")
     if gaps:
         print("Still to do:")

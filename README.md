@@ -71,7 +71,8 @@ against a double post.
 ## Making a posting plan sheet
 
 `skill/post-desk/references/SHEET.md` lists the tabs and columns. The sheet is the one source: change a caption or a
-date there, and every computer picks it up on the next command.
+date there, and every computer picks it up on the next command. Once a person has changed or agreed a post on their
+computer, that version is kept, and the command says so if the sheet now differs.
 
 ## Remove it
 

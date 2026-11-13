@@ -22,7 +22,8 @@ Blotato has accepted one post per switched-on account, and the posting log shows
 4. **Never schedule into the past, and never pick a time yourself.** If a proposed date has passed, ask for a new one.
 5. **One computer schedules.** The posting log lives on this computer, so Blotato's own post list is the real check
    against a double post. Look there before every scheduling run.
-6. **Never ask for, paste or repeat a key, a password or an account id in the chat.**
+6. **Never ask for, paste or repeat a key or a password in the chat.** Account ids go into the `setup.py account`
+   command and nowhere else: do not print them in a reply.
 
 ## The scripts
 
@@ -38,13 +39,17 @@ They live in this skill's `scripts` folder. Run them by full path, in quotes. On
 | `put_file.py` | uploads a local file to the address Blotato gives you, on Mac or Windows |
 
 `plan.py next`, `day` and `week` write a post file (`post_v1.json`) and a review page (`post_v1.md`) for each post into
-the posts folder, unless one is already there. The review page holds every caption in full.
+the posts folder. The review page holds every caption in full.
+
+`post_v1.json` is always a fresh copy of the plan, rewritten on every run until something is agreed. Never edit it. A
+change the person asks for, or an agreed time, goes in the next version (`post_v2.json`). From then on that version is
+kept, and the command warns if the plan's captions no longer match it.
 
 ## /post-setup: first time on a computer
 
 Follow `references/SETUP.md` one step at a time. It saves the posting plan link, connects Blotato, records which
-Blotato account is which, and finds the synced handover folder. Finish with `setup.py show`. It must say
-"Set-up complete." before any other command is used.
+Blotato account is which, and finds the synced handover folder. Finish with `setup.py show`. Until it says
+"Set-up complete.", the other commands can show posts but must not schedule anything, and `plan.py` says so at the top.
 
 ## /post-next: the next post
 
@@ -56,18 +61,21 @@ Blotato account is which, and finds the synced handover folder. Finish with `set
    - A file marked `MISSING`: the handover folder has not finished syncing. Ask the person to check, then stop.
    - Any `BLOCK` line: stop and show it. Do not post around a block.
 3. Open the review page and show the person, in the chat: the "to confirm" notes first, then each switched-on
-   account's caption in full, the media file, and the proposed time in local time and in UTC. Pass on every `WARN`
-   line in plain words.
+   account's caption in full, the media file, and the proposed time in local time and in UTC. Leave out the accounts
+   the page marks SWITCHED OFF, and say which ones you left out. Pass on every `WARN` line in plain words.
 4. Ask one question: "Shall I schedule these for <day and date> at <time> <time zone>, or change anything first?"
    Then stop and wait.
 5. The release clock (full rules in `references/BLOTATO.md`):
-   - Schedule only once the person has agreed a date and a time. Their yes to your question is that agreement.
+   - Schedule only once the person has agreed a date and a time. That means a yes to your question in step 4, for
+     this post, sent after you showed its captions. A yes given earlier, for example in a set-up message or for
+     another post, never counts.
    - "Looks good" or "approved" with no time approves the words only. Ask when it should go live, then stop.
    - Post now only when the person says "now", "post it now" or "immediately".
 6. Save the agreed release as the next version of the post file (`post_v2.json` with `release` set to
    `{"mode": "scheduled", "local": "<YYYY-MM-DD HH:MM>", "timezone": "<zone>", "scheduledTime": "<UTC>"}`, from
    `plan.py when`). Run `check_post.py` on it. It must show no BLOCK.
-7. Push it through Blotato as `references/BLOTATO.md` says: check Blotato's post list for that day first, upload each
+7. If `plan.py` says the set-up is not complete, stop here and say what is missing. Otherwise push it through Blotato
+   as `references/BLOTATO.md` says: check Blotato's post list for that day first, upload each
    media file once, make one `blotato_create_post` call per switched-on account, and log each result with
    `posting_log.py add` as soon as the call returns.
 8. Confirm each scheduled post with `blotato_get_post_status` or `blotato_list_schedules`. Reply with a short table:

@@ -108,7 +108,7 @@ def main():
         for c in COMMANDS:
             run.copy_tree(os.path.join(HERE, "commands", "codex", c), os.path.join(agents, "skills", c))
     else:
-        print("skip      Codex (no ~/.codex folder on this computer)")
+        print("skip      Codex (no ~/.codex or ~/.agents folder on this computer)")
 
     print("")
     if run.conflicts:
@@ -117,7 +117,8 @@ def main():
         print("Dry run: nothing was written.")
         return
     print("Done. Your settings in ~/.post-desk were not touched.")
-    print("Next: quit and reopen Claude Code (or Codex), then type  /post-setup  followed by the link to your posting plan.")
+    print("Next: if an agent is doing this for you, it carries on with the set-up now, and the commands appear after a restart.")
+    print("      Doing it yourself? Quit and reopen Claude Code (or Codex), then type  /post-setup  followed by the link to your posting plan.")
     print("In Codex the commands start with a dollar sign:  $post-setup  $post-next  $post-week  $post-status")
 
 

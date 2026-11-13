@@ -216,7 +216,8 @@ def print_report(report):
 
 
 def write_review(pack, report, path, settings=None):
-    labels = {k: v.get("label") or k for k, v in ((settings or {}).get("accounts") or {}).items()}
+    accounts = (settings or {}).get("accounts") or {}
+    labels = {k: v.get("label") or k for k, v in accounts.items()}
     out = ["# %s" % (pack.get("slot") or pack.get("date", "Post")), ""]
     rel = pack.get("release") or {}
     draft = "draft, no time agreed yet"
@@ -237,7 +238,8 @@ def write_review(pack, report, path, settings=None):
     by_role = {p["account"]: p for p in report["posts"]}
     for post in pack.get("posts", []):
         r = by_role.get(post.get("account"), {})
-        out.append("## %s (%s, %s)" % (labels.get(post.get("account"), post.get("account")), post.get("account"), post.get("platform")))
+        off = "" if (accounts.get(post.get("account")) or {}).get("on") else ", SWITCHED OFF: do not post"
+        out.append("## %s (%s, %s%s)" % (labels.get(post.get("account"), post.get("account")), post.get("account"), post.get("platform"), off))
         if post.get("title"):
             out.append("Title: " + post["title"])
             out.append("")
@@ -248,7 +250,7 @@ def write_review(pack, report, path, settings=None):
             out += ["- " + h for h in post["hooks"]]
             out.append("")
         checks = ["BLOCK: " + x for x in r.get("blocks", [])] + ["Check: " + x for x in r.get("warns", [])]
-        out.append("Rules check: " + ("all clear" if not checks else ""))
+        out.append("Rules check: " + ("all clear" if not checks else "for a person to look at"))
         out += ["- " + c for c in checks]
         out.append("")
     with open(path, "w", encoding="utf-8") as f:
